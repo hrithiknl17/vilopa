@@ -1,0 +1,43 @@
+name: mita lint
+description: >-
+  Fail the build when a database holds personal data your mita data map does not cover,
+  or the map names tables and columns the database no longer has.
+branding:
+  icon: shield
+  color: orange
+
+inputs:
+  datamap:
+    description: Path to the data map, relative to the repository root.
+    required: true
+  connector:
+    description: Only lint this connector. Default is every connector in the map.
+    required: false
+    default: ""
+  fail-on:
+    description: Lowest confidence (low, medium, high) that fails the build when unmapped.
+    required: false
+    default: medium
+  sample-rows:
+    description: Rows sampled per table. 0 classifies by column name and type only.
+    required: false
+    default: "200"
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+    - name: mita lint
+      shell: bash
+      # Inputs go through the environment, never into the script text.
+      env:
+        MITA_INPUT_DATAMAP: ${{ inputs.datamap }}
+        MITA_INPUT_CONNECTOR: ${{ inputs.connector }}
+        MITA_INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        MITA_INPUT_SAMPLE_ROWS: ${{ inputs.sample-rows }}
+      run: |
+        args=(lint "$MITA_INPUT_DATAMAP" --fail-on "$MITA_INPUT_FAIL_ON" --sample-rows "$MITA_INPUT_SAMPLE_ROWS")
+        if [ -n "$MITA_INPUT_CONNECTOR" ]; then
+          args+=(--connector "$MITA_INPUT_CONNECTOR")
+        fi
+        uv run --project "$GITHUB_ACTION_PATH" --locked mita "${args[@]}"

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from types import ModuleType
 
+import psycopg
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,3 +32,20 @@ def seed_module() -> ModuleType:
     sys.modules[name] = module  # dataclasses resolve their module through sys.modules
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture
+def dsn() -> str:
+    value = os.environ.get("MITA_APP_PG_DSN")
+    if not value:
+        pytest.skip("MITA_APP_PG_DSN not set")
+    return value
+
+
+@pytest.fixture
+def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
+    with psycopg.connect(dsn) as connection:
+        row = connection.execute("SELECT current_database()").fetchone()
+        if not row or row[0] != "bharat_bazaar":
+            pytest.skip("refusing to seed a database not named bharat_bazaar")
+        yield connection

@@ -3,9 +3,10 @@
 Delete a person's data from every system you mapped, prove it, and hit the deadline.
 Self-hosted. DPDP-aware. Not legal advice.
 
-> **Status: pre-alpha (week 1).** mita does not delete anything yet. What exists today: the
-> data map format with a validator, and a demo shop database seeded with canary data for
-> testing erasure. Follow the [roadmap](#roadmap).
+> **Status: pre-alpha.** mita does not delete anything yet. What exists today: the data map
+> format with a validator, `mita scan` and `mita lint` for finding personal data your map
+> misses, and a demo shop database seeded with canary data for testing erasure. Follow the
+> [roadmap](#roadmap).
 
 ## Why this exists
 
@@ -49,6 +50,53 @@ $ uv run mita datamap validate examples/bharat-bazaar/datamap.yaml
 examples/bharat-bazaar/datamap.yaml: ok (9 tables, 1 connector(s))
 ```
 
+## Finding personal data: `mita scan` and `mita lint`
+
+`mita scan` lists the columns of a live Postgres database that look like personal data, from
+their names, types and a sample of their values. It recognises Indian identifiers by shape:
+mobile numbers in any common format, PAN, GSTIN, Aadhaar (with its check digit), UPI IDs and
+PIN codes, as well as emails, IP addresses, and free text with emails or phone numbers inside.
+
+```console
+$ DATABASE_URL=postgresql://... uv run mita scan --connector app_pg
+COLUMN                                       CATEGORY     CONFIDENCE  WHY
+app_pg.public.customers.email                email        high        name suggests email; 200/200 sampled values look like email
+app_pg.public.customers.pan                  pan          high        name suggests pan; 94/94 sampled values look like pan
+app_pg.public.events.properties              free_text    medium      36/200 sampled values contain an email address or phone number
+app_pg.public.events.ip                      ip_address   high        column type is inet
+app_pg.public.products.name                  name         low         name suggests name
+...
+71 columns scanned, 22 look like personal data (14 high, 6 medium, 2 low)
+```
+
+`mita lint` fails when the database and the map disagree: a column that looks like personal
+data at medium confidence or above is not in the map, or the map names a table or column that
+no longer exists. Columns you reviewed and marked `pii: none` never fail the lint.
+
+```console
+$ uv run mita lint examples/bharat-bazaar/datamap.yaml
+examples/bharat-bazaar/datamap.yaml: error: app_pg.public.customers.alt_mobile: looks like phone (high: name suggests phone); not in the data map
+examples/bharat-bazaar/datamap.yaml: app_pg: 1 error(s), 0 warning(s)
+```
+
+Both connect read-only with a statement timeout, and never print, log or store a sampled
+value: reports carry categories, confidences and counts only. Sampling reads the first rows a
+table returns, not a random sample; `--sample-rows 0` classifies by name and type alone, which
+is what you want against a freshly migrated, empty CI database.
+
+### In CI
+
+Run your migrations against a throwaway database, then lint the map in the same job:
+
+```yaml
+- uses: hr1th1knl/mita@main  # pin a commit SHA in real use
+  env:
+    MITA_APP_PG_DSN: postgresql://app:app@localhost:5432/app  # the map's dsn_env
+  with:
+    datamap: privacy/datamap.yaml
+    sample-rows: 0
+```
+
 ## Development
 
 Needs [uv](https://docs.astral.sh/uv/) and Docker.
@@ -90,8 +138,9 @@ deterministic, so failures reproduce.
 
 ## Roadmap
 
-1. **`mita scan` and `mita lint`**: find PII-looking columns in a live Postgres schema, and
-   fail CI when a migration adds one the data map does not cover. Ships as a GitHub Action.
+1. ~~**`mita scan` and `mita lint`**~~ (done): find PII-looking columns in a live Postgres
+   schema, and fail CI when a migration adds one the data map does not cover. Ships as a
+   GitHub Action.
 2. **`mita plan`**: resolve a person across tables through foreign keys and declared
    relations, order the deletes, and refuse plans that touch too many rows.
 3. **`mita erase` / `mita access`**: execute, verify, and write an evidence record.

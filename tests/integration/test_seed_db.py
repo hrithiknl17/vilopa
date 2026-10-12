@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-from collections.abc import Iterator
 from types import ModuleType
 
 import psycopg
@@ -11,18 +9,6 @@ import pytest
 from psycopg import sql
 
 pytestmark = pytest.mark.db
-
-
-@pytest.fixture
-def conn() -> Iterator[psycopg.Connection[tuple[object, ...]]]:
-    dsn = os.environ.get("MITA_APP_PG_DSN")
-    if not dsn:
-        pytest.skip("MITA_APP_PG_DSN not set")
-    with psycopg.connect(dsn) as connection:
-        row = connection.execute("SELECT current_database()").fetchone()
-        if not row or row[0] != "bharat_bazaar":
-            pytest.skip("refusing to seed a database not named bharat_bazaar")
-        yield connection
 
 
 def test_seed_loads_and_counts_match(

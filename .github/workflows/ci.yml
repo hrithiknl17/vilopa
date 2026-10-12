@@ -54,3 +54,7 @@ jobs:
       - run: uv sync --locked
       - run: uv run python examples/bharat-bazaar/seed.py
       - run: uv run pytest -m db
+      - name: lint the demo data map through the GitHub Action
+        uses: ./
+        with:
+          datamap: examples/bharat-bazaar/datamap.yaml
