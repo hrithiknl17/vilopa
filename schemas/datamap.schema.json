@@ -1,0 +1,359 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "mita data map",
+  "$defs": {
+    "Column": {
+      "additionalProperties": false,
+      "properties": {
+        "pii": {
+          "$ref": "#/$defs/PiiCategory"
+        },
+        "strategy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColumnStrategy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required for PII columns in `update_columns` tables."
+        },
+        "retain": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Retention"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when strategy is retain."
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "pii"
+      ],
+      "title": "Column",
+      "type": "object"
+    },
+    "ColumnStrategy": {
+      "description": "What erasure does to one column of a row that is kept (`update_columns`).",
+      "enum": [
+        "nullify",
+        "pseudonymize",
+        "retain"
+      ],
+      "title": "ColumnStrategy",
+      "type": "string"
+    },
+    "Connector": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]{0,62}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "const": "postgres",
+          "title": "Kind",
+          "type": "string"
+        },
+        "dsn_env": {
+          "description": "Environment variable holding the connection string.",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "title": "Dsn Env",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "kind",
+        "dsn_env"
+      ],
+      "title": "Connector",
+      "type": "object"
+    },
+    "Match": {
+      "additionalProperties": false,
+      "description": "A column that identifies the principal directly, without a foreign-key path.",
+      "properties": {
+        "key": {
+          "description": "A key declared under `principal.keys`.",
+          "pattern": "^[a-z][a-z0-9_]{0,62}$",
+          "title": "Key",
+          "type": "string"
+        },
+        "column": {
+          "title": "Column",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "column"
+      ],
+      "title": "Match",
+      "type": "object"
+    },
+    "Normalizer": {
+      "description": "How an identifier is normalised before it is matched or hashed.",
+      "enum": [
+        "exact",
+        "email",
+        "in_mobile"
+      ],
+      "title": "Normalizer",
+      "type": "string"
+    },
+    "PiiCategory": {
+      "description": "What kind of personal data a column holds. `none` marks a reviewed, non-PII column.",
+      "enum": [
+        "email",
+        "phone",
+        "name",
+        "address",
+        "pin_code",
+        "pan",
+        "aadhaar",
+        "dob",
+        "ip_address",
+        "gstin",
+        "upi_id",
+        "payment_ref",
+        "free_text",
+        "other",
+        "none"
+      ],
+      "title": "PiiCategory",
+      "type": "string"
+    },
+    "Principal": {
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "description": "The table whose row is the person.",
+          "pattern": "^[a-z][a-z0-9_]{0,62}\\.[^.\\s]+\\.[^.\\s]+$",
+          "title": "Root",
+          "type": "string"
+        },
+        "keys": {
+          "minProperties": 1,
+          "patternProperties": {
+            "^[a-z][a-z0-9_]{0,62}$": {
+              "$ref": "#/$defs/PrincipalKey"
+            }
+          },
+          "title": "Keys",
+          "type": "object"
+        }
+      },
+      "required": [
+        "root",
+        "keys"
+      ],
+      "title": "Principal",
+      "type": "object"
+    },
+    "PrincipalKey": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "description": "Column of the root table holding this identifier.",
+          "title": "Column",
+          "type": "string"
+        },
+        "normalize": {
+          "$ref": "#/$defs/Normalizer",
+          "default": "exact"
+        }
+      },
+      "required": [
+        "column"
+      ],
+      "title": "PrincipalKey",
+      "type": "object"
+    },
+    "Relation": {
+      "additionalProperties": false,
+      "description": "A link the database does not enforce as a foreign key.",
+      "properties": {
+        "from": {
+          "pattern": "^[a-z][a-z0-9_]{0,62}\\.[^.\\s]+\\.[^.\\s]+\\.[^.\\s]+$",
+          "title": "From",
+          "type": "string"
+        },
+        "to": {
+          "pattern": "^[a-z][a-z0-9_]{0,62}\\.[^.\\s]+\\.[^.\\s]+\\.[^.\\s]+$",
+          "title": "To",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "title": "Relation",
+      "type": "object"
+    },
+    "Retention": {
+      "additionalProperties": false,
+      "description": "Why data is kept despite an erasure request, and for how long.",
+      "properties": {
+        "reason": {
+          "description": "Plain-language reason. Shown in evidence records.",
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "period": {
+          "description": "ISO 8601 period, e.g. P6Y or P18M.",
+          "pattern": "^P(\\d+Y(\\d+M)?(\\d+D)?|\\d+M(\\d+D)?|\\d+D)$",
+          "title": "Period",
+          "type": "string"
+        },
+        "from_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Timestamp column the period counts from.",
+          "title": "From Column"
+        },
+        "rule_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The law or policy clause this relies on.",
+          "title": "Rule Ref"
+        }
+      },
+      "required": [
+        "reason",
+        "period"
+      ],
+      "title": "Retention",
+      "type": "object"
+    },
+    "Table": {
+      "additionalProperties": false,
+      "properties": {
+        "erase": {
+          "$ref": "#/$defs/TableErase"
+        },
+        "retain": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Retention"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when erase is retain; the whole row is kept."
+        },
+        "match": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Match"
+          },
+          "title": "Match",
+          "type": "array"
+        },
+        "columns": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Column"
+          },
+          "title": "Columns",
+          "type": "object"
+        }
+      },
+      "required": [
+        "erase"
+      ],
+      "title": "Table",
+      "type": "object"
+    },
+    "TableErase": {
+      "description": "What erasure does to a matching row.",
+      "enum": [
+        "delete_row",
+        "update_columns",
+        "retain"
+      ],
+      "title": "TableErase",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 0,
+      "title": "Version",
+      "type": "integer"
+    },
+    "connectors": {
+      "items": {
+        "$ref": "#/$defs/Connector"
+      },
+      "minItems": 1,
+      "title": "Connectors",
+      "type": "array"
+    },
+    "principal": {
+      "$ref": "#/$defs/Principal"
+    },
+    "tables": {
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-z][a-z0-9_]{0,62}\\.[^.\\s]+\\.[^.\\s]+$": {
+          "$ref": "#/$defs/Table"
+        }
+      },
+      "title": "Tables",
+      "type": "object"
+    },
+    "relations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Relation"
+      },
+      "title": "Relations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "connectors",
+    "principal",
+    "tables"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,53 @@
+[project]
+name = "mita"
+version = "0.0.0"
+description = "Execute and verify data-erasure and access requests across your databases, storage and SaaS tools. Self-hosted, DPDP-aware."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+authors = [{ name = "Hrithik" }]
+keywords = ["dpdp", "privacy-engineering", "data-erasure", "postgres", "gdpr"]
+dependencies = [
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.9",
+    "pyyaml>=6.0",
+    "typer>=0.12",
+]
+
+[project.scripts]
+mita = "mita.cli:app"
+
+[dependency-groups]
+dev = [
+    "faker>=30",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "types-pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "PT"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+"examples/**" = ["S311"]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src", "tests", "examples/bharat-bazaar/seed.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "-ra"]
+markers = ["db: needs a running Postgres at MITA_APP_PG_DSN (the demo database)"]

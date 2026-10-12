@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=../../schemas/datamap.schema.json
+#
+# Data map for the Bharat Bazaar demo shop.
+# Retention periods and rule references below are EXAMPLES, not legal advice.
+# Confirm your own obligations with a qualified advisor.
+
+version: 0
+
+connectors:
+  - name: app_pg
+    kind: postgres
+    dsn_env: MITA_APP_PG_DSN
+
+principal:
+  root: app_pg.public.customers
+  keys:
+    user_id: { column: id }
+    email: { column: email, normalize: email }
+    phone: { column: phone, normalize: in_mobile }
+
+tables:
+  app_pg.public.customers:
+    erase: delete_row
+    columns:
+      id: { pii: none }
+      email: { pii: email }
+      phone: { pii: phone }
+      full_name: { pii: name }
+      date_of_birth: { pii: dob }
+      pan: { pii: pan }
+      referred_by_customer_id:
+        pii: none
+        note: >-
+          Self-referencing FK with NO ACTION. Before deleting a referrer, the planner
+          must nullify this column on the customers they referred.
+
+  app_pg.public.addresses:
+    erase: delete_row
+    columns:
+      line1: { pii: address }
+      line2: { pii: address }
+      city: { pii: address }
+      state: { pii: none }
+      pin_code: { pii: pin_code }
+      phone: { pii: phone }
+
+  app_pg.public.orders:
+    erase: update_columns
+    columns:
+      customer_id: { pii: none, strategy: nullify, note: Detach the kept order from the person. }
+      address_id: { pii: none, strategy: nullify, note: The address row is deleted. }
+      delivery_notes: { pii: free_text, strategy: nullify }
+
+  app_pg.public.invoices:
+    erase: retain
+    retain:
+      reason: Tax invoices must be kept as issued, including the billing name and address.
+      period: P8Y
+      from_column: issued_at
+      rule_ref: "Example only: GST record-keeping rules. Verify the period with your advisor."
+    columns:
+      billing_name: { pii: name }
+      billing_address: { pii: address }
+      gstin: { pii: gstin }
+
+  app_pg.public.payments:
+    erase: update_columns
+    columns:
+      upi_id: { pii: upi_id, strategy: pseudonymize }
+      provider_ref:
+        pii: payment_ref
+        strategy: retain
+        retain:
+          reason: Needed to reconcile settlements and refunds with the payment provider.
+          period: P8Y
+          from_column: paid_at
+          rule_ref: "Example only: finance reconciliation policy."
+
+  app_pg.public.reviews:
+    erase: delete_row
+    columns:
+      body: { pii: free_text }
+
+  app_pg.public.support_tickets:
+    erase: delete_row
+    match:
+      - { key: email, column: contact_email }  # guest tickets have no customer_id
+    columns:
+      contact_email: { pii: email }
+      subject: { pii: none }
+      body: { pii: free_text }
+
+  app_pg.public.wishlists:
+    erase: delete_row
+
+  app_pg.public.events:
+    erase: delete_row
+    columns:
+      properties: { pii: free_text, note: Login events carry the email address. }
+      ip: { pii: ip_address }
+
+relations:
+  # events.customer_id has no FK in the database; declare the link so the planner follows it.
+  - from: app_pg.public.events.customer_id
+    to: app_pg.public.customers.id
