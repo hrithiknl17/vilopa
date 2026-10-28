@@ -8,6 +8,12 @@ Self-hosted. DPDP-aware. Not legal advice.
 > misses, and a demo shop database seeded with canary data for testing erasure. Follow the
 > [roadmap](#roadmap).
 
+## Install
+
+```sh
+pip install mita    # or: uv tool install mita
+```
+
 ## Why this exists
 
 - From May 2027, Indian companies must answer erasure and access requests within a fixed
@@ -89,7 +95,7 @@ is what you want against a freshly migrated, empty CI database.
 Run your migrations against a throwaway database, then lint the map in the same job:
 
 ```yaml
-- uses: hr1th1knl/mita@main  # pin a commit SHA in real use
+- uses: hrithiknl17/mita@v0.0.1  # pin a commit SHA in real use
   env:
     MITA_APP_PG_DSN: postgresql://app:app@localhost:5432/app  # the map's dsn_env
   with:
