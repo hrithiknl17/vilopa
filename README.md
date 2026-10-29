@@ -8,7 +8,7 @@ Self-hosted. DPDP-aware. Not legal advice.
 > misses, and a demo shop database seeded with canary data for testing erasure. Follow the
 > [roadmap](#roadmap).
 
-![mita lint catching an undocumented phone column](docs/demo.gif)
+![mita lint catching an undocumented phone column](https://raw.githubusercontent.com/hrithiknl17/mita/main/docs/demo.gif)
 
 ## Install
 
