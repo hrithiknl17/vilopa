@@ -1,4 +1,4 @@
-"""Load the demo shop into a real Postgres. Runs only when MITA_APP_PG_DSN is set."""
+"""Load the demo shop into a real Postgres. Runs only when VILOPA_APP_PG_DSN is set."""
 
 from __future__ import annotations
 

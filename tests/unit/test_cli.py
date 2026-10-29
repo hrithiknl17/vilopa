@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from mita.cli import app
+from vilopa.cli import app
 
 runner = CliRunner()
 
@@ -28,14 +28,14 @@ def test_validate_reports_problems_and_fails(tmp_path: Path) -> None:
 def test_schema_prints_json() -> None:
     result = runner.invoke(app, ["datamap", "schema"])
     assert result.exit_code == 0
-    assert json.loads(result.output)["title"] == "mita data map"
+    assert json.loads(result.output)["title"] == "vilopa data map"
 
 
 def test_scan_needs_the_dsn_variable(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("MITA_TEST_UNSET_DSN", raising=False)
-    result = runner.invoke(app, ["scan", "--dsn-env", "MITA_TEST_UNSET_DSN"])
+    monkeypatch.delenv("VILOPA_TEST_UNSET_DSN", raising=False)
+    result = runner.invoke(app, ["scan", "--dsn-env", "VILOPA_TEST_UNSET_DSN"])
     assert result.exit_code == 2
-    assert "MITA_TEST_UNSET_DSN is not set" in result.output
+    assert "VILOPA_TEST_UNSET_DSN is not set" in result.output
 
 
 def test_lint_rejects_an_invalid_map(tmp_path: Path) -> None:
@@ -54,13 +54,13 @@ def test_lint_rejects_an_unknown_connector(demo_datamap_path: Path) -> None:
 def test_lint_needs_the_connector_dsn(
     demo_datamap_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("MITA_APP_PG_DSN", raising=False)
+    monkeypatch.delenv("VILOPA_APP_PG_DSN", raising=False)
     result = runner.invoke(app, ["lint", str(demo_datamap_path)])
     assert result.exit_code == 2
-    assert "MITA_APP_PG_DSN is not set" in result.output
+    assert "VILOPA_APP_PG_DSN is not set" in result.output
 
 
 def test_version() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert result.output.startswith("mita ")
+    assert result.output.startswith("vilopa ")

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from mita.core.catalog import ColumnInfo
-from mita.core.datamap import PiiCategory as P
-from mita.core.detect import Confidence as C
-from mita.core.detect import classify, verhoeff_valid
+from vilopa.core.catalog import ColumnInfo
+from vilopa.core.datamap import PiiCategory as P
+from vilopa.core.detect import Confidence as C
+from vilopa.core.detect import classify, verhoeff_valid
 
 
 def col(name: str, data_type: str = "text") -> ColumnInfo:

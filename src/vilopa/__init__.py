@@ -1,4 +1,4 @@
-"""mita: execute and verify data-erasure and access requests."""
+"""vilopa: execute and verify data-erasure and access requests."""
 
 from importlib.metadata import version
 

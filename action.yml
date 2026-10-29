@@ -1,6 +1,6 @@
-name: mita lint
+name: vilopa lint
 description: >-
-  Fail the build when a database holds personal data your mita data map does not cover,
+  Fail the build when a database holds personal data your vilopa data map does not cover,
   or the map names tables and columns the database no longer has.
 branding:
   icon: shield
@@ -27,17 +27,17 @@ runs:
   using: composite
   steps:
     - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
-    - name: mita lint
+    - name: vilopa lint
       shell: bash
       # Inputs go through the environment, never into the script text.
       env:
-        MITA_INPUT_DATAMAP: ${{ inputs.datamap }}
-        MITA_INPUT_CONNECTOR: ${{ inputs.connector }}
-        MITA_INPUT_FAIL_ON: ${{ inputs.fail-on }}
-        MITA_INPUT_SAMPLE_ROWS: ${{ inputs.sample-rows }}
+        VILOPA_INPUT_DATAMAP: ${{ inputs.datamap }}
+        VILOPA_INPUT_CONNECTOR: ${{ inputs.connector }}
+        VILOPA_INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        VILOPA_INPUT_SAMPLE_ROWS: ${{ inputs.sample-rows }}
       run: |
-        args=(lint "$MITA_INPUT_DATAMAP" --fail-on "$MITA_INPUT_FAIL_ON" --sample-rows "$MITA_INPUT_SAMPLE_ROWS")
-        if [ -n "$MITA_INPUT_CONNECTOR" ]; then
-          args+=(--connector "$MITA_INPUT_CONNECTOR")
+        args=(lint "$VILOPA_INPUT_DATAMAP" --fail-on "$VILOPA_INPUT_FAIL_ON" --sample-rows "$VILOPA_INPUT_SAMPLE_ROWS")
+        if [ -n "$VILOPA_INPUT_CONNECTOR" ]; then
+          args+=(--connector "$VILOPA_INPUT_CONNECTOR")
         fi
-        uv run --project "$GITHUB_ACTION_PATH" --locked mita "${args[@]}"
+        uv run --project "$GITHUB_ACTION_PATH" --locked vilopa "${args[@]}"

@@ -18,8 +18,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import IntEnum
 
-from mita.core.catalog import ColumnInfo
-from mita.core.datamap import PiiCategory
+from vilopa.core.catalog import ColumnInfo
+from vilopa.core.datamap import PiiCategory
 
 MIN_SAMPLES = 5
 """Fewer non-empty samples than this cap value-only evidence at medium confidence."""

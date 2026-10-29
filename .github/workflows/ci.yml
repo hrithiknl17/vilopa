@@ -36,16 +36,16 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: mita
-          POSTGRES_PASSWORD: mita
+          POSTGRES_USER: vilopa
+          POSTGRES_PASSWORD: vilopa
           POSTGRES_DB: bharat_bazaar
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U mita -d bharat_bazaar"
+          --health-cmd "pg_isready -U vilopa -d bharat_bazaar"
           --health-interval 2s --health-timeout 5s --health-retries 20
     env:
-      MITA_APP_PG_DSN: postgresql://mita:mita@localhost:5432/bharat_bazaar
+      VILOPA_APP_PG_DSN: postgresql://vilopa:vilopa@localhost:5432/bharat_bazaar
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:

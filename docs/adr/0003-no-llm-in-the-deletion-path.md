@@ -5,7 +5,7 @@
 
 ## Context
 
-Every core job in mita (resolving a person across tables, ordering deletes, calling APIs,
+Every core job in vilopa (resolving a person across tables, ordering deletes, calling APIs,
 verifying) has a correct, deterministic answer. A deletion tool that is "usually right"
 destroys the wrong customer's data some of the time.
 
@@ -17,7 +17,7 @@ a new transfer of personal data to a new processor.
 No LLM ships in v1. Planning, execution and verification stay deterministic and tested.
 
 The one place a model may later earn a role is flagging PII inside free-text columns during
-`mita scan`. If it ever ships, it must:
+`vilopa scan`. If it ever ships, it must:
 
 - run locally, never through a hosted API;
 - beat a rules-plus-NER baseline (Microsoft Presidio with Indian recognisers) on a published

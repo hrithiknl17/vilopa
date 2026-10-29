@@ -1,4 +1,4 @@
-"""mita command-line interface."""
+"""vilopa command-line interface."""
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ from typing import Annotated, Any
 import psycopg
 import typer
 
-from mita import __version__
-from mita.connectors import postgres
-from mita.core import datamap
-from mita.core.detect import ColumnReport, Confidence
-from mita.core.lint import LintResult, lint
+from vilopa import __version__
+from vilopa.connectors import postgres
+from vilopa.core import datamap
+from vilopa.core.detect import ColumnReport, Confidence
+from vilopa.core.lint import LintResult, lint
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -28,7 +28,7 @@ app.add_typer(datamap_app, name="datamap")
 
 def _print_version(value: bool) -> None:
     if value:
-        typer.echo(f"mita {__version__}")
+        typer.echo(f"vilopa {__version__}")
         raise typer.Exit
 
 
@@ -39,7 +39,7 @@ def main(
         typer.Option("--version", callback=_print_version, is_eager=True, help="Show version."),
     ] = False,
 ) -> None:
-    """mita: delete a person's data from every system you mapped, and prove it."""
+    """vilopa: delete a person's data from every system you mapped, and prove it."""
 
 
 @datamap_app.command("validate")
@@ -181,7 +181,7 @@ def lint_command(
             if result.below_threshold:
                 summary += (
                     f"; {result.below_threshold} finding(s) below {fail_on} confidence"
-                    " not checked (see mita scan)"
+                    " not checked (see vilopa scan)"
                 )
             typer.echo(summary)
     if failed:

@@ -32,7 +32,7 @@ from faker import Faker
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
-DEFAULT_DSN = "postgresql://mita:mita@127.0.0.1:55432/bharat_bazaar"
+DEFAULT_DSN = "postgresql://vilopa:vilopa@127.0.0.1:55432/bharat_bazaar"
 DEMO_DATABASE = "bharat_bazaar"
 SCHEMA_SQL = Path(__file__).with_name("schema.sql")
 EPOCH = datetime(2026, 9, 1, tzinfo=UTC)  # fixed "now" for generated data
@@ -341,7 +341,7 @@ def _pan(rng: random.Random, surname: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0] if __doc__ else None)
-    parser.add_argument("--dsn", default=os.environ.get("MITA_APP_PG_DSN", DEFAULT_DSN))
+    parser.add_argument("--dsn", default=os.environ.get("VILOPA_APP_PG_DSN", DEFAULT_DSN))
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--customers", type=int, default=200)
     parser.add_argument(

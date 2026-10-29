@@ -17,8 +17,8 @@ from typing import Any
 import psycopg
 from psycopg import sql
 
-from mita.core import detect
-from mita.core.catalog import ColumnInfo
+from vilopa.core import detect
+from vilopa.core.catalog import ColumnInfo
 
 Connection = psycopg.Connection[tuple[Any, ...]]
 
@@ -44,7 +44,7 @@ ORDER BY c.table_schema, c.table_name, c.ordinal_position
 def connect(dsn: str, *, statement_timeout_ms: int = 30_000) -> Connection:
     conn = psycopg.connect(
         dsn,
-        application_name="mita",
+        application_name="vilopa",
         options=f"-c statement_timeout={int(statement_timeout_ms)}",
     )
     conn.read_only = True

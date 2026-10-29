@@ -282,7 +282,7 @@ def json_schema() -> dict[str, Any]:
     schema = DataMap.model_json_schema(by_alias=True)
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "title": "mita data map",
+        "title": "vilopa data map",
         **{k: v for k, v in schema.items() if k != "title"},
     }
 

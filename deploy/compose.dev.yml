@@ -1,18 +1,18 @@
 # Development dependencies. Week 1: the demo shop database only.
 # MinIO, Mailpit and toxiproxy join as the connectors that need them land.
-name: mita-dev
+name: vilopa-dev
 
 services:
   app-pg:
     image: postgres:16
     environment:
-      POSTGRES_USER: mita
-      POSTGRES_PASSWORD: mita  # local development only
+      POSTGRES_USER: vilopa
+      POSTGRES_PASSWORD: vilopa  # local development only
       POSTGRES_DB: bharat_bazaar
     ports:
       - "127.0.0.1:55432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mita -d bharat_bazaar"]
+      test: ["CMD-SHELL", "pg_isready -U vilopa -d bharat_bazaar"]
       interval: 2s
       timeout: 5s
       retries: 20

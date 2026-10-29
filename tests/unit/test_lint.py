@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from mita.core import datamap
-from mita.core.catalog import ColumnInfo
-from mita.core.detect import ColumnReport, Confidence, classify
-from mita.core.lint import Severity, lint
+from vilopa.core import datamap
+from vilopa.core.catalog import ColumnInfo
+from vilopa.core.detect import ColumnReport, Confidence, classify
+from vilopa.core.lint import Severity, lint
 
 
 def make_map(extra_tables: dict[str, Any] | None = None, **top: Any) -> datamap.DataMap:

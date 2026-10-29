@@ -1,4 +1,4 @@
-"""Scan and lint the seeded demo shop. Runs only when MITA_APP_PG_DSN is set."""
+"""Scan and lint the seeded demo shop. Runs only when VILOPA_APP_PG_DSN is set."""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ import psycopg
 import pytest
 from typer.testing import CliRunner
 
-from mita.cli import app
-from mita.connectors import postgres
-from mita.core import datamap
-from mita.core.datamap import PiiCategory
-from mita.core.lint import lint
+from vilopa.cli import app
+from vilopa.connectors import postgres
+from vilopa.core import datamap
+from vilopa.core.datamap import PiiCategory
+from vilopa.core.lint import lint
 
 pytestmark = pytest.mark.db
 
@@ -103,7 +103,7 @@ def test_connect_is_read_only(dsn: str) -> None:
         postgres.connect(dsn) as conn,
         pytest.raises(psycopg.errors.ReadOnlySqlTransaction),
     ):
-        conn.execute("CREATE TABLE mita_must_not_exist ()")
+        conn.execute("CREATE TABLE vilopa_must_not_exist ()")
 
 
 runner = CliRunner()
@@ -119,7 +119,7 @@ def test_cli_lint_passes_on_the_demo(demo_datamap_path: Path) -> None:
 @pytest.mark.usefixtures("seeded")
 def test_cli_scan_json() -> None:
     result = runner.invoke(
-        app, ["scan", "--dsn-env", "MITA_APP_PG_DSN", "--connector", CONNECTOR, "--json"]
+        app, ["scan", "--dsn-env", "VILOPA_APP_PG_DSN", "--connector", CONNECTOR, "--json"]
     )
     assert result.exit_code == 0, result.output
     by_ref = {row["ref"]: row for row in json.loads(result.output)}

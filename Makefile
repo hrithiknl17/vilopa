@@ -1,4 +1,4 @@
-export MITA_APP_PG_DSN ?= postgresql://mita:mita@127.0.0.1:55432/bharat_bazaar
+export VILOPA_APP_PG_DSN ?= postgresql://vilopa:vilopa@127.0.0.1:55432/bharat_bazaar
 COMPOSE := docker compose -f deploy/compose.dev.yml
 
 .PHONY: dev down seed test-fast test-db lint fmt types schema check
@@ -31,6 +31,6 @@ types:
 	uv run mypy
 
 schema:  ## regenerate the committed data map JSON Schema
-	uv run mita datamap schema > schemas/datamap.schema.json
+	uv run vilopa datamap schema > schemas/datamap.schema.json
 
 check: lint types test-fast

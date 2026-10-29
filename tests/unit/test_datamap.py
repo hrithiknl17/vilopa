@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from mita.core import datamap
-from mita.core.datamap import DataMapError, TableErase
+from vilopa.core import datamap
+from vilopa.core.datamap import DataMapError, TableErase
 
 MINIMAL: dict[str, Any] = {
     "version": 0,

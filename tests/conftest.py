@@ -36,9 +36,9 @@ def seed_module() -> ModuleType:
 
 @pytest.fixture
 def dsn() -> str:
-    value = os.environ.get("MITA_APP_PG_DSN")
+    value = os.environ.get("VILOPA_APP_PG_DSN")
     if not value:
-        pytest.skip("MITA_APP_PG_DSN not set")
+        pytest.skip("VILOPA_APP_PG_DSN not set")
     return value
 
 

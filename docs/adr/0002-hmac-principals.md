@@ -5,11 +5,11 @@
 
 ## Context
 
-mita deletes personal data. If it stores the email or phone number of everyone who asked
-for erasure, mita itself becomes a store of exactly the data it was asked to remove, and a
+vilopa deletes personal data. If it stores the email or phone number of everyone who asked
+for erasure, vilopa itself becomes a store of exactly the data it was asked to remove, and a
 list of "people who asked to be forgotten" is sensitive in its own right.
 
-mita still needs to find open requests for the same person, enforce "one open erasure per
+vilopa still needs to find open requests for the same person, enforce "one open erasure per
 person", and match retention notices.
 
 ## Decision
@@ -32,5 +32,5 @@ person", and match retention notices.
 
 ## Rejected
 
-- **Plain identifiers:** turns mita into a PII store.
+- **Plain identifiers:** turns vilopa into a PII store.
 - **Unkeyed SHA-256:** trivially reversible for emails and Indian mobile numbers by brute force.

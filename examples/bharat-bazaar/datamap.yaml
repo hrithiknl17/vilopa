@@ -9,7 +9,7 @@ version: 0
 connectors:
   - name: app_pg
     kind: postgres
-    dsn_env: MITA_APP_PG_DSN
+    dsn_env: VILOPA_APP_PG_DSN
 
 principal:
   root: app_pg.public.customers

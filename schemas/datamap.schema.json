@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "mita data map",
+  "title": "vilopa data map",
   "$defs": {
     "Column": {
       "additionalProperties": false,

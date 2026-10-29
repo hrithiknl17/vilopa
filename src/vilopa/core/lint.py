@@ -18,8 +18,8 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 
-from mita.core.datamap import DataMap, PiiCategory, Table
-from mita.core.detect import ColumnReport, Confidence, Finding
+from vilopa.core.datamap import DataMap, PiiCategory, Table
+from vilopa.core.detect import ColumnReport, Confidence, Finding
 
 
 class Severity(StrEnum):
@@ -41,7 +41,7 @@ class Issue:
 class LintResult:
     issues: list[Issue] = field(default_factory=list)
     below_threshold: int = 0
-    """Findings under the confidence threshold, not reported. `mita scan` lists them."""
+    """Findings under the confidence threshold, not reported. `vilopa scan` lists them."""
 
     @property
     def errors(self) -> list[Issue]:

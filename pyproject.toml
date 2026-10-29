@@ -1,6 +1,6 @@
 [project]
 name = "vilopa"
-version = "0.0.1"
+version = "0.0.2"
 description = "Execute and verify data-erasure and access requests across your databases, storage and SaaS tools. Self-hosted, DPDP-aware."
 readme = "README.md"
 license = "Apache-2.0"
@@ -16,11 +16,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/hrithiknl17/mita"
-Issues = "https://github.com/hrithiknl17/mita/issues"
+Homepage = "https://github.com/hrithiknl17/vilopa"
+Issues = "https://github.com/hrithiknl17/vilopa/issues"
 
 [project.scripts]
-mita = "mita.cli:app"
+vilopa = "vilopa.cli:app"
 
 [dependency-groups]
 dev = [
@@ -34,10 +34,6 @@ dev = [
 [build-system]
 requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
-
-# The distribution is "vilopa" on PyPI; the import package and command stay "mita".
-[tool.hatch.build.targets.wheel]
-packages = ["src/mita"]
 
 [tool.ruff]
 line-length = 100
@@ -58,4 +54,4 @@ files = ["src", "tests", "examples/bharat-bazaar/seed.py"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--strict-markers", "-ra"]
-markers = ["db: needs a running Postgres at MITA_APP_PG_DSN (the demo database)"]
+markers = ["db: needs a running Postgres at VILOPA_APP_PG_DSN (the demo database)"]

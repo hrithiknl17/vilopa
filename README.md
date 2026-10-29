@@ -1,25 +1,19 @@
-# mita
+# vilopa
 
 Delete a person's data from every system you mapped, prove it, and hit the deadline.
 Self-hosted. DPDP-aware. Not legal advice.
 
-> **Status: pre-alpha.** mita does not delete anything yet. What exists today: the data map
-> format with a validator, `mita scan` and `mita lint` for finding personal data your map
+> **Status: pre-alpha.** vilopa does not delete anything yet. What exists today: the data map
+> format with a validator, `vilopa scan` and `vilopa lint` for finding personal data your map
 > misses, and a demo shop database seeded with canary data for testing erasure. Follow the
 > [roadmap](#roadmap).
 
-![mita lint catching an undocumented phone column](https://raw.githubusercontent.com/hrithiknl17/mita/main/docs/demo.gif)
+![vilopa lint catching an undocumented phone column](https://raw.githubusercontent.com/hrithiknl17/vilopa/main/docs/demo.gif)
 
 ## Install
 
 ```sh
 pip install vilopa    # or: uv tool install vilopa
-```
-
-The package is published as `vilopa`; the command and the import are `mita`.
-
-```sh
-mita --version
 ```
 
 ## Why this exists
@@ -60,19 +54,19 @@ and the JSON Schema in [`schemas/datamap.schema.json`](schemas/datamap.schema.js
 YAML language server get completion and validation from it.
 
 ```console
-$ uv run mita datamap validate examples/bharat-bazaar/datamap.yaml
+$ uv run vilopa datamap validate examples/bharat-bazaar/datamap.yaml
 examples/bharat-bazaar/datamap.yaml: ok (9 tables, 1 connector(s))
 ```
 
-## Finding personal data: `mita scan` and `mita lint`
+## Finding personal data: `vilopa scan` and `vilopa lint`
 
-`mita scan` lists the columns of a live Postgres database that look like personal data, from
+`vilopa scan` lists the columns of a live Postgres database that look like personal data, from
 their names, types and a sample of their values. It recognises Indian identifiers by shape:
 mobile numbers in any common format, PAN, GSTIN, Aadhaar (with its check digit), UPI IDs and
 PIN codes, as well as emails, IP addresses, and free text with emails or phone numbers inside.
 
 ```console
-$ DATABASE_URL=postgresql://... uv run mita scan --connector app_pg
+$ DATABASE_URL=postgresql://... uv run vilopa scan --connector app_pg
 COLUMN                                       CATEGORY     CONFIDENCE  WHY
 app_pg.public.customers.email                email        high        name suggests email; 200/200 sampled values look like email
 app_pg.public.customers.pan                  pan          high        name suggests pan; 94/94 sampled values look like pan
@@ -83,12 +77,12 @@ app_pg.public.products.name                  name         low         name sugge
 71 columns scanned, 22 look like personal data (14 high, 6 medium, 2 low)
 ```
 
-`mita lint` fails when the database and the map disagree: a column that looks like personal
+`vilopa lint` fails when the database and the map disagree: a column that looks like personal
 data at medium confidence or above is not in the map, or the map names a table or column that
 no longer exists. Columns you reviewed and marked `pii: none` never fail the lint.
 
 ```console
-$ uv run mita lint examples/bharat-bazaar/datamap.yaml
+$ uv run vilopa lint examples/bharat-bazaar/datamap.yaml
 examples/bharat-bazaar/datamap.yaml: error: app_pg.public.customers.alt_mobile: looks like phone (high: name suggests phone); not in the data map
 examples/bharat-bazaar/datamap.yaml: app_pg: 1 error(s), 0 warning(s)
 ```
@@ -103,9 +97,9 @@ is what you want against a freshly migrated, empty CI database.
 Run your migrations against a throwaway database, then lint the map in the same job:
 
 ```yaml
-- uses: hrithiknl17/mita@v0.0.1  # pin a commit SHA in real use
+- uses: hrithiknl17/vilopa@v0.0.1  # pin a commit SHA in real use
   env:
-    MITA_APP_PG_DSN: postgresql://app:app@localhost:5432/app  # the map's dsn_env
+    VILOPA_APP_PG_DSN: postgresql://app:app@localhost:5432/app  # the map's dsn_env
   with:
     datamap: privacy/datamap.yaml
     sample-rows: 0
@@ -129,7 +123,7 @@ uv sync
 docker compose -f deploy/compose.dev.yml up -d --wait
 uv run python examples/bharat-bazaar/seed.py
 uv run ruff check . && uv run mypy && uv run pytest -m "not db"
-MITA_APP_PG_DSN=postgresql://mita:mita@127.0.0.1:55432/bharat_bazaar uv run pytest -m db
+VILOPA_APP_PG_DSN=postgresql://vilopa:vilopa@127.0.0.1:55432/bharat_bazaar uv run pytest -m db
 ```
 
 ### The demo shop and its canaries
@@ -152,12 +146,12 @@ deterministic, so failures reproduce.
 
 ## Roadmap
 
-1. ~~**`mita scan` and `mita lint`**~~ (done): find PII-looking columns in a live Postgres
+1. ~~**`vilopa scan` and `vilopa lint`**~~ (done): find PII-looking columns in a live Postgres
    schema, and fail CI when a migration adds one the data map does not cover. Ships as a
    GitHub Action.
-2. **`mita plan`**: resolve a person across tables through foreign keys and declared
+2. **`vilopa plan`**: resolve a person across tables through foreign keys and declared
    relations, order the deletes, and refuse plans that touch too many rows.
-3. **`mita erase` / `mita access`**: execute, verify, and write an evidence record.
+3. **`vilopa erase` / `vilopa access`**: execute, verify, and write an evidence record.
 4. **Service**: request intake, approvals, deadlines, retention sweeps, connectors.
 
 ## License

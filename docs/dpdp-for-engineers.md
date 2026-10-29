@@ -21,9 +21,9 @@ of India. Read Rules 8, 13 and 14 and the Third Schedule first.
 6. What must a company be able to show afterwards? What counts as evidence?
 7. How must a company verify the identity of the person making the request?
 
-## How each answer maps to mita
+## How each answer maps to vilopa
 
-| Duty | mita mechanism | Status |
+| Duty | vilopa mechanism | Status |
 | --- | --- | --- |
 | Answer erasure/access within the deadline | `due_at` computed at intake, SLA metrics | planned (week 9) |
 | Erase when purpose is served | retention sweeps with advance notice | planned (week 9) |

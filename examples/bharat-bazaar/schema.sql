@@ -1,4 +1,4 @@
--- Bharat Bazaar: a small Indian e-commerce schema used as mita's demo and test fixture.
+-- Bharat Bazaar: a small Indian e-commerce schema used as vilopa's demo and test fixture.
 --
 -- Shapes on purpose, because a real erasure has to cope with them:
 --   * customers.referred_by_customer_id is a self-referencing FK with NO ACTION, so
