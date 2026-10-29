@@ -1,5 +1,5 @@
 [project]
-name = "mita"
+name = "vilopa"
 version = "0.0.1"
 description = "Execute and verify data-erasure and access requests across your databases, storage and SaaS tools. Self-hosted, DPDP-aware."
 readme = "README.md"
@@ -34,6 +34,10 @@ dev = [
 [build-system]
 requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
+
+# The distribution is "vilopa" on PyPI; the import package and command stay "mita".
+[tool.hatch.build.targets.wheel]
+packages = ["src/mita"]
 
 [tool.ruff]
 line-length = 100

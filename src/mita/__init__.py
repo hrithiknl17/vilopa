@@ -2,4 +2,4 @@
 
 from importlib.metadata import version
 
-__version__ = version("mita")
+__version__ = version("vilopa")

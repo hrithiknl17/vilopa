@@ -11,7 +11,13 @@ Self-hosted. DPDP-aware. Not legal advice.
 ## Install
 
 ```sh
-pip install mita    # or: uv tool install mita
+pip install vilopa    # or: uv tool install vilopa
+```
+
+The package is published as `vilopa`; the command and the import are `mita`.
+
+```sh
+mita --version
 ```
 
 ## Why this exists

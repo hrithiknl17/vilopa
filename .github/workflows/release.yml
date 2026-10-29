@@ -39,7 +39,7 @@ jobs:
     # Trusted publishing: PyPI accepts the job's OIDC token, so no API token is stored.
     environment:
       name: pypi
-      url: https://pypi.org/p/mita
+      url: https://pypi.org/p/vilopa
     permissions:
       id-token: write
     steps:
