@@ -18,7 +18,9 @@ import psycopg
 from psycopg import sql
 
 from vilopa.core import detect
-from vilopa.core.catalog import ColumnInfo
+from vilopa.core.catalog import ColumnInfo, ForeignKey, Schema
+from vilopa.core.datamap import Normalizer
+from vilopa.engine.estimate import Condition, KeyCondition
 
 Connection = psycopg.Connection[tuple[Any, ...]]
 
@@ -75,6 +77,156 @@ def scan(
                 detect.ColumnReport(column, len(values), detect.classify(column, values))
             )
     return reports
+
+
+_FOREIGN_KEYS_SQL = """
+SELECT c.conname, ns.nspname, cl.relname,
+       ARRAY(SELECT a.attname FROM unnest(c.conkey) WITH ORDINALITY AS k(num, pos)
+             JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.num
+             ORDER BY k.pos)::text[],
+       rns.nspname, rcl.relname,
+       ARRAY(SELECT a.attname FROM unnest(c.confkey) WITH ORDINALITY AS k(num, pos)
+             JOIN pg_attribute a ON a.attrelid = c.confrelid AND a.attnum = k.num
+             ORDER BY k.pos)::text[],
+       c.confdeltype
+FROM pg_constraint c
+JOIN pg_class cl ON cl.oid = c.conrelid
+JOIN pg_namespace ns ON ns.oid = cl.relnamespace
+JOIN pg_class rcl ON rcl.oid = c.confrelid
+JOIN pg_namespace rns ON rns.oid = rcl.relnamespace
+WHERE c.contype = 'f'
+  AND c.conparentid = 0
+  AND ns.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+ORDER BY ns.nspname, cl.relname, c.conname
+"""
+
+_NOT_NULL_SQL = """
+SELECT ns.nspname, cl.relname, a.attname
+FROM pg_attribute a
+JOIN pg_class cl ON cl.oid = a.attrelid
+JOIN pg_namespace ns ON ns.oid = cl.relnamespace
+WHERE a.attnotnull AND a.attnum > 0 AND NOT a.attisdropped
+  AND cl.relkind IN ('r', 'p')
+  AND ns.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+"""
+
+_PRIMARY_KEYS_SQL = """
+SELECT ns.nspname, cl.relname,
+       ARRAY(SELECT a.attname FROM unnest(c.conkey) WITH ORDINALITY AS k(num, pos)
+             JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.num
+             ORDER BY k.pos)::text[]
+FROM pg_constraint c
+JOIN pg_class cl ON cl.oid = c.conrelid
+JOIN pg_namespace ns ON ns.oid = cl.relnamespace
+WHERE c.contype = 'p' AND ns.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+"""
+
+_ON_DELETE = {
+    "a": "NO ACTION",
+    "r": "RESTRICT",
+    "c": "CASCADE",
+    "n": "SET NULL",
+    "d": "SET DEFAULT",
+}
+
+
+def schema_info(conn: Connection) -> Schema:
+    """Foreign keys, NOT NULL columns and primary keys of every non-system schema.
+
+    All schemas are read, not only the mapped ones: a foreign key from an unmapped schema
+    into a mapped table still blocks a delete.
+    """
+    foreign_keys = [
+        ForeignKey(
+            name=str(name),
+            schema=str(schema),
+            table=str(table),
+            columns=tuple(columns),
+            ref_schema=str(ref_schema),
+            ref_table=str(ref_table),
+            ref_columns=tuple(ref_columns),
+            on_delete=_ON_DELETE.get(str(action), str(action)),
+        )
+        for name, schema, table, columns, ref_schema, ref_table, ref_columns, action in (
+            conn.execute(_FOREIGN_KEYS_SQL).fetchall()
+        )
+    ]
+    not_null = [(str(s), str(t), str(c)) for s, t, c in conn.execute(_NOT_NULL_SQL).fetchall()]
+    primary_keys = {
+        (str(s), str(t)): tuple(cols) for s, t, cols in conn.execute(_PRIMARY_KEYS_SQL).fetchall()
+    }
+    return Schema.build(foreign_keys, not_null, primary_keys)
+
+
+def normalize_sql(column: sql.Composable, how: Normalizer) -> sql.Composable:
+    """The SQL twin of `vilopa.core.plan.normalize`. Keep the two in step."""
+    text = sql.SQL("{}::text").format(column)
+    if how is Normalizer.EMAIL:
+        return sql.SQL("lower(btrim({}))").format(text)
+    if how is Normalizer.IN_MOBILE:
+        return sql.SQL("right(regexp_replace({}, '[^0-9]', '', 'g'), 10)").format(text)
+    return text
+
+
+class Source:
+    """Read-only row access for the estimator (`vilopa.engine.estimate.Source`)."""
+
+    def __init__(self, conn: Connection) -> None:
+        self.conn = conn
+
+    def select(
+        self, table_ref: str, columns: Sequence[str], conditions: Sequence[Condition]
+    ) -> list[tuple[str | None, ...]]:
+        if not conditions:
+            return []
+        _, schema, table = table_ref.split(".")
+        params: list[Any] = []
+        clauses: list[sql.Composable] = []
+        for condition in conditions:
+            if isinstance(condition, KeyCondition):
+                clauses.append(
+                    sql.SQL("{} = ANY ({}::text[])").format(
+                        normalize_sql(sql.Identifier(condition.column), condition.normalize),
+                        sql.Placeholder(),
+                    )
+                )
+                params.append(list(condition.values))
+            else:
+                width = len(condition.columns)
+                left = sql.SQL(", ").join(
+                    sql.SQL("{}::text").format(sql.Identifier(c)) for c in condition.columns
+                )
+                arrays = sql.SQL(", ").join(
+                    sql.SQL("{}::text[]").format(sql.Placeholder()) for _ in range(width)
+                )
+                clauses.append(sql.SQL("({}) IN (SELECT * FROM unnest({}))").format(left, arrays))
+                params.extend([v[i] for v in condition.values] for i in range(width))
+        selected = (
+            sql.SQL(", ").join(sql.SQL("{}::text").format(sql.Identifier(c)) for c in columns)
+            if columns
+            else sql.SQL("1")
+        )
+        query = sql.SQL("SELECT {} FROM {} WHERE {}").format(
+            selected, sql.Identifier(schema, table), sql.SQL(" OR ").join(clauses)
+        )
+        rows = self.conn.execute(query, params).fetchall()
+        if not columns:
+            return [() for _ in rows]
+        return [tuple(None if v is None else str(v) for v in row) for row in rows]
+
+    def total(self, table_ref: str) -> int:
+        _, schema, table = table_ref.split(".")
+        row = self.conn.execute(
+            "SELECT c.reltuples FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace"
+            " WHERE n.nspname = %s AND c.relname = %s",
+            (schema, table),
+        ).fetchone()
+        if row and row[0] is not None and float(row[0]) > 0:
+            return int(row[0])
+        exact = self.conn.execute(
+            sql.SQL("SELECT count(*) FROM {}").format(sql.Identifier(schema, table))
+        ).fetchone()
+        return int(exact[0]) if exact else 0
 
 
 def _sample(

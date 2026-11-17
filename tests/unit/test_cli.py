@@ -64,3 +64,18 @@ def test_version() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert result.output.startswith("vilopa ")
+
+
+def test_plan_rejects_a_bad_identifier_before_connecting(demo_datamap_path: Path) -> None:
+    result = runner.invoke(app, ["plan", str(demo_datamap_path), "--principal", "phone:123"])
+    assert result.exit_code == 2
+    assert "not an Indian mobile number" in result.output
+
+
+def test_plan_needs_the_connector_dsn(
+    demo_datamap_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("VILOPA_APP_PG_DSN", raising=False)
+    result = runner.invoke(app, ["plan", str(demo_datamap_path)])
+    assert result.exit_code == 2
+    assert "VILOPA_APP_PG_DSN is not set" in result.output

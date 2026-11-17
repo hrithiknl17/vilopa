@@ -1,0 +1,266 @@
+{
+  "ok": true,
+  "problems": [],
+  "resolve": [
+    {
+      "depth": 0,
+      "keys": [
+        {
+          "column": "id",
+          "key": "user_id",
+          "normalize": "exact"
+        },
+        {
+          "column": "email",
+          "key": "email",
+          "normalize": "email"
+        },
+        {
+          "column": "phone",
+          "key": "phone",
+          "normalize": "in_mobile"
+        }
+      ],
+      "table": "app_pg.public.customers",
+      "via": []
+    },
+    {
+      "depth": 1,
+      "keys": [],
+      "table": "app_pg.public.addresses",
+      "via": [
+        {
+          "child": "app_pg.public.addresses",
+          "columns": [
+            "customer_id"
+          ],
+          "enforced": true,
+          "name": "addresses_customer_id_fkey",
+          "parent": "app_pg.public.customers",
+          "ref_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "depth": 1,
+      "keys": [],
+      "table": "app_pg.public.events",
+      "via": [
+        {
+          "child": "app_pg.public.events",
+          "columns": [
+            "customer_id"
+          ],
+          "enforced": false,
+          "name": "relation",
+          "parent": "app_pg.public.customers",
+          "ref_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "depth": 1,
+      "keys": [],
+      "table": "app_pg.public.orders",
+      "via": [
+        {
+          "child": "app_pg.public.orders",
+          "columns": [
+            "customer_id"
+          ],
+          "enforced": true,
+          "name": "orders_customer_id_fkey",
+          "parent": "app_pg.public.customers",
+          "ref_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "depth": 1,
+      "keys": [],
+      "table": "app_pg.public.reviews",
+      "via": [
+        {
+          "child": "app_pg.public.reviews",
+          "columns": [
+            "customer_id"
+          ],
+          "enforced": true,
+          "name": "reviews_customer_id_fkey",
+          "parent": "app_pg.public.customers",
+          "ref_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "depth": 1,
+      "keys": [
+        {
+          "column": "contact_email",
+          "key": "email",
+          "normalize": "email"
+        }
+      ],
+      "table": "app_pg.public.support_tickets",
+      "via": [
+        {
+          "child": "app_pg.public.support_tickets",
+          "columns": [
+            "customer_id"
+          ],
+          "enforced": true,
+          "name": "support_tickets_customer_id_fkey",
+          "parent": "app_pg.public.customers",
+          "ref_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "depth": 1,
+      "keys": [],
+      "table": "app_pg.public.wishlists",
+      "via": [
+        {
+          "child": "app_pg.public.wishlists",
+          "columns": [
+            "customer_id"
+          ],
+          "enforced": true,
+          "name": "wishlists_customer_id_fkey",
+          "parent": "app_pg.public.customers",
+          "ref_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "depth": 2,
+      "keys": [],
+      "table": "app_pg.public.invoices",
+      "via": [
+        {
+          "child": "app_pg.public.invoices",
+          "columns": [
+            "order_id"
+          ],
+          "enforced": true,
+          "name": "invoices_order_id_fkey",
+          "parent": "app_pg.public.orders",
+          "ref_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "depth": 2,
+      "keys": [],
+      "table": "app_pg.public.payments",
+      "via": [
+        {
+          "child": "app_pg.public.payments",
+          "columns": [
+            "order_id"
+          ],
+          "enforced": true,
+          "name": "payments_order_id_fkey",
+          "parent": "app_pg.public.orders",
+          "ref_columns": [
+            "id"
+          ]
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "edge": {
+        "child": "app_pg.public.customers",
+        "columns": [
+          "referred_by_customer_id"
+        ],
+        "enforced": true,
+        "name": "customers_referred_by_customer_id_fkey",
+        "parent": "app_pg.public.customers",
+        "ref_columns": [
+          "id"
+        ]
+      },
+      "kind": "detach",
+      "table": "app_pg.public.customers"
+    },
+    {
+      "edge": {
+        "child": "app_pg.public.orders",
+        "columns": [
+          "address_id"
+        ],
+        "enforced": true,
+        "name": "orders_address_id_fkey",
+        "parent": "app_pg.public.addresses",
+        "ref_columns": [
+          "id"
+        ]
+      },
+      "kind": "detach",
+      "table": "app_pg.public.orders"
+    },
+    {
+      "kind": "delete",
+      "table": "app_pg.public.addresses"
+    },
+    {
+      "kind": "delete",
+      "table": "app_pg.public.events"
+    },
+    {
+      "columns": {
+        "address_id": "nullify",
+        "customer_id": "nullify",
+        "delivery_notes": "nullify"
+      },
+      "kind": "update",
+      "table": "app_pg.public.orders"
+    },
+    {
+      "columns": {
+        "provider_ref": "retain",
+        "upi_id": "pseudonymize"
+      },
+      "kind": "update",
+      "table": "app_pg.public.payments"
+    },
+    {
+      "kind": "delete",
+      "table": "app_pg.public.reviews"
+    },
+    {
+      "kind": "delete",
+      "table": "app_pg.public.support_tickets"
+    },
+    {
+      "kind": "delete",
+      "table": "app_pg.public.wishlists"
+    },
+    {
+      "kind": "delete",
+      "table": "app_pg.public.customers"
+    },
+    {
+      "kind": "retain",
+      "reason": "Tax invoices must be kept as issued, including the billing name and address.",
+      "table": "app_pg.public.invoices"
+    }
+  ]
+}
