@@ -14,9 +14,11 @@ import typer
 
 from vilopa import __version__
 from vilopa.connectors import postgres
-from vilopa.core import datamap
+from vilopa.core import datamap, plan
 from vilopa.core.detect import ColumnReport, Confidence
 from vilopa.core.lint import LintResult, lint
+from vilopa.core.plan import StepKind
+from vilopa.engine import estimate
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -186,6 +188,118 @@ def lint_command(
             typer.echo(summary)
     if failed:
         raise typer.Exit(1)
+
+
+@app.command("plan")
+def plan_command(
+    path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+    principal: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--principal",
+            help="Identifier as key:value, e.g. email:a@example.com. Repeatable. Without it, "
+            "only the plan's structure is shown.",
+        ),
+    ] = None,
+    max_rows: Annotated[
+        int, typer.Option(min=1, help="Refuse a plan whose step touches more rows than this.")
+    ] = plan.Limits.max_rows,
+    max_fraction: Annotated[
+        float,
+        typer.Option(
+            min=0.0, max=1.0, help="Refuse a plan whose step touches more of a table than this."
+        ),
+    ] = plan.Limits.max_fraction,
+    as_json: AsJson = False,
+) -> None:
+    """Dry run: show which rows an erasure would touch, in what order, and why.
+
+    Reads foreign keys from every connector and, with --principal, counts target rows in a
+    read-only transaction. Nothing is changed. Exits 1 when the plan cannot run.
+    """
+    try:
+        dm = datamap.load(path)
+    except datamap.DataMapError as exc:
+        for problem in exc.problems:
+            typer.echo(f"{path}: {problem}", err=True)
+        raise typer.Exit(1) from exc
+    try:
+        values = plan.parse_principal(dm, principal) if principal else None
+    except plan.PrincipalError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(2) from exc
+
+    used = {ref.split(".", 1)[0] for ref in dm.tables}
+    connections: dict[str, postgres.Connection] = {}
+    try:
+        for connector in dm.connectors:
+            if connector.name in used:
+                connections[connector.name] = _connect(connector.dsn_env)
+        schemas = {name: postgres.schema_info(conn) for name, conn in connections.items()}
+        built = plan.build(dm, schemas)
+        counts = None
+        if values is not None and built.ok:
+            sources = {name: postgres.Source(conn) for name, conn in connections.items()}
+            counts = estimate.estimate(built, values, sources)
+    except psycopg.Error as exc:
+        typer.echo(f"cannot read the database: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    finally:
+        for conn in connections.values():
+            conn.close()
+
+    limits = plan.Limits(max_rows=max_rows, max_fraction=max_fraction)
+    blast = plan.check_blast(built, counts, limits) if counts else []
+    if as_json:
+        out = built.to_json()
+        if counts is not None:
+            out["estimate"] = {
+                "targets": counts.targets,
+                "totals": counts.totals,
+                "steps": [counts.rows(built, i) for i in range(len(built.steps))],
+            }
+            out["blast"] = [{"path": p.path, "message": p.message} for p in blast]
+            out["ok"] = built.ok and not blast
+        typer.echo(json.dumps(out, indent=2))
+    else:
+        _echo_plan(built, counts)
+        for problem in [*built.problems, *blast]:
+            typer.echo(f"{path}: {problem}", err=True)
+        if built.ok and not blast:
+            typer.echo("\nplan ok: dry run only, nothing was changed")
+        else:
+            typer.echo(f"\nplan refused: {len(built.problems) + len(blast)} problem(s)")
+    if not built.ok or blast:
+        raise typer.Exit(1)
+
+
+def _echo_plan(built: plan.Plan, counts: plan.Estimate | None) -> None:
+    def rows(n: int) -> str:
+        return f"{n} row" if n == 1 else f"{n} rows"
+
+    typer.echo("Resolve, parent first:")
+    resolve_rows = []
+    for r in built.resolve:
+        how = [f"{k.column} = {k.key}" for k in r.keys]
+        how += [f"via {e.name} ({', '.join(e.columns)})" for e in r.via]
+        count = rows(counts.targets.get(r.table, 0)) if counts else ""
+        resolve_rows.append((f"  {r.depth}", r.table, count, "; ".join(how)))
+    _echo_table(("  DEPTH", "TABLE", "ROWS" if counts else "", "FOUND BY"), resolve_rows)
+
+    typer.echo("\nSteps, in order:")
+    step_rows = []
+    for i, step in enumerate(built.steps):
+        count = rows(counts.rows(built, i)) if counts and step.kind is not StepKind.RETAIN else ""
+        step_rows.append((f"  {i + 1}", str(step.kind), step.table, count, step.describe()))
+    _echo_table(("  #", "STEP", "TABLE", "ROWS" if counts else "", "WHAT"), step_rows)
+
+
+def _connect(dsn_env: str) -> postgres.Connection:
+    dsn = os.environ.get(dsn_env)
+    if not dsn:
+        typer.echo(f"environment variable {dsn_env} is not set", err=True)
+        raise typer.Exit(2)
+    return postgres.connect(dsn)
 
 
 def _scan(dsn_env: str, schemas: Sequence[str] | None, sample_rows: int) -> list[ColumnReport]:

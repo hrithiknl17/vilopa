@@ -25,6 +25,7 @@ vilopa = "vilopa.cli:app"
 [dependency-groups]
 dev = [
     "faker>=30",
+    "hypothesis>=6.100",
     "mypy>=1.13",
     "pytest>=8.3",
     "ruff>=0.8",

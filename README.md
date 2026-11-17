@@ -5,8 +5,8 @@ Self-hosted. DPDP-aware. Not legal advice.
 
 > **Status: pre-alpha.** vilopa does not delete anything yet. What exists today: the data map
 > format with a validator, `vilopa scan` and `vilopa lint` for finding personal data your map
-> misses, and a demo shop database seeded with canary data for testing erasure. Follow the
-> [roadmap](#roadmap).
+> misses, `vilopa plan` for a dry run of an erasure, and a demo shop database seeded with
+> canary data for testing erasure. Follow the [roadmap](#roadmap).
 
 ![vilopa lint catching an undocumented phone column](https://raw.githubusercontent.com/hrithiknl17/vilopa/main/docs/demo.gif)
 
@@ -105,6 +105,31 @@ Run your migrations against a throwaway database, then lint the map in the same 
     sample-rows: 0
 ```
 
+## Dry run: `vilopa plan`
+
+`vilopa plan` shows what erasing one person would do, without changing anything. It reads
+foreign keys from the database, finds the person's rows in every mapped table, and prints
+the steps in the order they must run:
+
+```console
+$ uv run vilopa plan examples/bharat-bazaar/datamap.yaml --principal email:priya@example.test
+```
+
+- **Resolve, parent first.** Rows are found from the identifiers you give (`email`, `phone`
+  in any format, `user_id`), then through foreign keys, declared `relations` and `match`
+  columns. Every target set is read before anything changes, so detaching an order from the
+  customer cannot hide the invoices found through that order.
+- **Mutate, child first.** References from other rows to rows being deleted are set to NULL
+  first (for example, customers the person referred keep their accounts). Then each table is
+  deleted or updated, children before parents. Retained tables are listed with their reason.
+- **Refused plans exit 1.** A kept row that would point at a deleted row, an unmapped table
+  with a foreign key into a deleted table, a NOT NULL column the plan must clear, a table
+  the planner cannot reach, identifiers that match more than one person, or a step above the
+  blast-radius limit (`--max-rows`, default 10,000; `--max-fraction`, default 5% of a table
+  once a step touches over 100 rows). The planner never relies on `ON DELETE CASCADE`.
+
+Without `--principal`, only the plan's structure is shown. `--json` prints it for tools.
+
 ## Development
 
 Needs [uv](https://docs.astral.sh/uv/) and Docker.
@@ -149,8 +174,8 @@ deterministic, so failures reproduce.
 1. ~~**`vilopa scan` and `vilopa lint`**~~ (done): find PII-looking columns in a live Postgres
    schema, and fail CI when a migration adds one the data map does not cover. Ships as a
    GitHub Action.
-2. **`vilopa plan`**: resolve a person across tables through foreign keys and declared
-   relations, order the deletes, and refuse plans that touch too many rows.
+2. ~~**`vilopa plan`**~~ (done): resolve a person across tables through foreign keys and
+   declared relations, order the deletes, and refuse plans that touch too many rows.
 3. **`vilopa erase` / `vilopa access`**: execute, verify, and write an evidence record.
 4. **Service**: request intake, approvals, deadlines, retention sweeps, connectors.
 
